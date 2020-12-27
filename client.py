@@ -1,6 +1,8 @@
 import socket
 import threading
 import pickle
+import queue
+import time
 from transfer import Transfer
 
 class Client:
@@ -10,6 +12,7 @@ class Client:
 
 	def createConnection(self, ip, port, username):
 		self.username = username
+		self.pingLock = queue.Queue(1)
 		self.ip = ip
 		self.port = port
 		self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -24,6 +27,7 @@ class Client:
 		if response == b"accepted":
 			self.connected = True
 			threading.Thread(target=self.mainThread, daemon=True).start()
+			threading.Thread(target=self.pinger, daemon=True).start()
 			self.app.connection.connectionSuccess()
 		elif response == b"username_already":
 			self.app.connection.connectionFailed("Username is already taken.")
@@ -34,10 +38,23 @@ class Client:
 		data = pickle.dumps({"type": "msg", "data": msg})
 		self.trans.send(data)
 
-	def closeConnection(self):
-		self.connected = False
-		self.s.shutdown(2)
-		self.s.close()
+	def closeConnection(self, reason=""):
+		if self.connected:
+			self.connected = False
+			self.s.shutdown(2)
+			self.s.close()
+			self.app.connection.connectionLost(reason)
+
+	def pinger(self):
+		while True:
+			time.sleep(5)
+			self.trans.send(b"ping")
+			try:
+				response = self.pingLock.get(timeout=5)
+			except queue.Empty:
+				self.closeConnection("Server timed out.")
+			if not response:
+				break
 
 	def mainThread(self):
 		reason = ""
@@ -51,6 +68,9 @@ class Client:
 				break
 			elif data == b"ping":
 				self.trans.send(b"pong")
+				continue
+			elif data == b"pong":
+				self.pingLock.put(True)
 				continue
 
 			content = pickle.loads(data)

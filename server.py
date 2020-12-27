@@ -26,6 +26,9 @@ class Client:
 			if data == b"drop":
 				reason = "Client disconnected"
 				break
+			elif data == b"ping":
+				self.trans.send(b"pong")
+				continue
 			elif data == b"pong":
 				self.pingLock.put(True)
 				continue

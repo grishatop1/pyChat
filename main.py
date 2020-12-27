@@ -58,7 +58,6 @@ class Connection(LabelFrame):
 
 	def disconnect(self):
 		client.closeConnection()
-		self.connectionDisconnected()
 
 	def connectionSuccess(self):
 		self.setConnectedState()
@@ -68,9 +67,9 @@ class Connection(LabelFrame):
 		self.setNormalState()
 		showinfo("Connection", f"Connection Failed.\n{reason}")
 
-	def connectionLost(self):
+	def connectionLost(self, reason=""):
 		self.setNormalState()
-		showinfo("Connection", f"Server closed the connection.")
+		showinfo("Connection", f"Connection lost.\n{reason}")
 
 	def connectionDisconnected(self):
 		self.setNormalState()
