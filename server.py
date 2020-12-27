@@ -50,10 +50,10 @@ class Client:
 			self.trans.send(b"ping")
 			try:
 				response = self.pingLock.get(timeout=5)
+				if not response:
+					break
 			except queue.Empty:
 				self.closeClient("Timed out.")
-			if not response:
-				break
 
 	def closeClient(self, reason=""):
 		if not self.closed:

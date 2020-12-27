@@ -16,14 +16,17 @@ class Transfer:
 		return header + data
 
 	def send(self, data):
+		h_data = self.appendHeader(data)
+		self.pending.put(h_data)
+
+	def sendRaw(self, data):
 		self.pending.put(data)
 
 	def sendDataLoop(self):
 		while True:
 			data = self.pending.get()
-			h_data = self.appendHeader(data)
 			try:
-				self.s.send(h_data)
+				self.s.send(data)
 			except socket.error:
 				return
 
