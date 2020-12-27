@@ -5,9 +5,6 @@ from client import Client
 from playsound import playsound
 import threading
 
-def playMessageSound():
-	pass
-
 class Connection(LabelFrame):
 	def __init__(self, parent, *args, **kwargs):
 		LabelFrame.__init__(self, parent, *args, **kwargs)
@@ -69,11 +66,7 @@ class Connection(LabelFrame):
 
 	def connectionLost(self, reason=""):
 		self.setNormalState()
-		showinfo("Connection", f"Connection lost.\n{reason}")
-
-	def connectionDisconnected(self):
-		self.setNormalState()
-		showinfo("Connection", f"Disconnected.")
+		showinfo("Connection", f"Disconnected.\n{reason}")
 
 class ChatLog(LabelFrame):
 	def __init__(self, parent, *args, **kwargs):
@@ -120,6 +113,10 @@ class MainApplication(Frame):
 
 		self.connection.pack(padx=5, pady=5)
 		self.chatlog.pack(padx=5, pady=5)
+
+	def playMessageSound(self):
+		root.deiconify()
+		playsound("msg.mp3")
 
 
 if __name__ == "__main__":

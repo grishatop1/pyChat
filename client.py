@@ -16,6 +16,7 @@ class Client:
 		self.ip = ip
 		self.port = port
 		self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.s.settimeout(5)
 		self.trans = Transfer(self.s)
 		try:
 			self.s.connect((self.ip, self.port))
@@ -24,6 +25,7 @@ class Client:
 			return
 		self.trans.send(username.encode())
 		response = self.trans.recvData()
+		self.s.settimeout(None)
 		if response == b"accepted":
 			self.connected = True
 			threading.Thread(target=self.mainThread, daemon=True).start()
@@ -51,9 +53,10 @@ class Client:
 			self.trans.send(b"ping")
 			try:
 				response = self.pingLock.get(timeout=5)
+				if not response:
+					break
 			except queue.Empty:
 				self.closeConnection("Server timed out.")
-			if not response:
 				break
 
 	def mainThread(self):
@@ -78,3 +81,5 @@ class Client:
 			if content["type"] == "msg":
 				sender, data = content["sender"], content["data"]
 				self.app.chatlog.insertMessage(f"[{sender}]: {data}")
+				if sender != self.username:
+					threading.Thread(target=self.app.playMessageSound).start()
