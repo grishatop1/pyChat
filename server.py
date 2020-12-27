@@ -61,6 +61,8 @@ class Client:
 			self.pingLock.put(False)
 			self.conn.close()
 			del server.clients[self.username]
+			announce = pickle.dumps({"type": "gone", "username": self.username})
+			server.sendToAll(None, announce)
 			print(f"{self.username} disconnected. [{reason}]")
 
 
@@ -110,14 +112,9 @@ class Server:
 			return
 		trans.send(b"accepted")
 		self.clients[username] = Client(conn, addr, username, trans)
+		announce = pickle.dumps({"type": "new", "username": username})
+		self.sendToAll(None, announce)
 		print(f"{username} connected!")
-
-	def closeClient(self, lock, username, reason=""):
-		lock.put(False)
-		del self.clients[username]
-		conn.shutdown(2)
-		conn.close()
-		print(f"{username} disconnected. [{reason}]")
 
 if __name__ == '__main__':
 	server = Server("192.168.0.33", 25565)

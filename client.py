@@ -83,3 +83,9 @@ class Client:
 				self.app.chatlog.insertMessage(f"[{sender}]: {data}")
 				if sender != self.username:
 					threading.Thread(target=self.app.playMessageSound).start()
+			elif content["type"] == "new":
+				username = content["username"]
+				self.app.chatlog.insertMessage(f"{username} connected.", "state")
+			elif content["type"] == "gone":
+				username = content["username"]
+				self.app.chatlog.insertMessage(f"{username} disconnected.", "warning")
