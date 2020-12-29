@@ -48,16 +48,19 @@ class Client:
 			self.app.connection.connectionLost(reason)
 
 	def pinger(self):
+		warn = False
 		while True:
-			time.sleep(5)
-			self.trans.send(b"ping")
 			try:
 				response = self.pingLock.get(timeout=5)
+				warn = False
 				if not response:
 					break
 			except queue.Empty:
-				self.closeConnection("Server timed out.")
-				break
+				if warn:
+					self.closeClient("Timed out.")
+					warn = True
+				else:
+					self.trans.send(b"ping")
 
 	def mainThread(self):
 		reason = ""
@@ -75,6 +78,8 @@ class Client:
 			elif data == b"pong":
 				self.pingLock.put(True)
 				continue
+
+			self.pingLock.put(True)
 
 			content = pickle.loads(data)
 
