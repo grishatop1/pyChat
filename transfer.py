@@ -31,12 +31,13 @@ class Transfer:
 				return
 
 	def recvData(self):
-		new = True
 		full = b""
-		received_len = 0
-		received_head = 0
+		recv_len = 0
 		recv_size = self.header
+		new = True
 		while True:
+			if recv_size == 0:
+				break
 			try:
 				data = self.s.recv(recv_size)
 			except socket.error:
@@ -45,21 +46,15 @@ class Transfer:
 				return
 
 			if new:
-				received_head += len(data)
-				if received_head < self.header:
-					recv_size = self.header - len(data)
-					continue
 				actual_len = int(data[:self.header])
 				full += data[self.header:]
-				received_len += len(data)
+				recv_len += len(data[self.header:])
+				recv_size = min(actual_len - recv_len, self.buffer)
 				new = False
 				continue
 
 			full += data
-			received_len += len(data)
-			recv_size = min(max(actual_len - received_len + self.header, 0), self.buffer)
-
-			if received_len - self.header == actual_len:
-				break
+			recv_len += len(data)
+			recv_size = min(actual_len - recv_len, self.buffer)
 
 		return full
