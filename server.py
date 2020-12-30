@@ -57,8 +57,8 @@ class Client:
 			except queue.Empty:
 				if warn:
 					self.closeClient("Timed out.")
-					warn = True
 				else:
+					warn = True
 					self.trans.send(b"ping")
 
 	def closeClient(self, reason=""):

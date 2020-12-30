@@ -12,10 +12,13 @@ class Connection(LabelFrame):
 
 		self.ip_label = Label(self, text="IP:")
 		self.ip_entry = Combobox(self, values=["192.168.0.33"])
+		self.ip_entry.insert(0, "192.168.0.33")
 		self.port_label = Label(self, text="Port:")
 		self.port_entry = Entry(self)
+		self.port_entry.insert(0, "25565")
 		self.username_label = Label(self, text="Username:")
 		self.username_entry = Entry(self)
+		self.username_entry.insert(0, "loh")
 		self.connect_btn = Button(self, text="Connect", command=self.connect)
 
 		self.ip_label.grid(row=0, column=0, padx=5, pady=5)

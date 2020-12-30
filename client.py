@@ -57,9 +57,9 @@ class Client:
 					break
 			except queue.Empty:
 				if warn:
-					self.closeClient("Timed out.")
-					warn = True
+					self.closeConnection("Timed out.")
 				else:
+					warn = True
 					self.trans.send(b"ping")
 
 	def mainThread(self):
