@@ -45,6 +45,7 @@ class Client:
 			self.connected = False
 			self.s.shutdown(2)
 			self.s.close()
+			self.pingLock.put(False)
 			self.app.connection.connectionLost(reason)
 
 	def pinger(self):
