@@ -83,6 +83,7 @@ class ChatLog(LabelFrame):
 
 		self.msg_entry = Entry(self)
 		self.msg_entry.bind("<Return>", self.sendMessage)
+		self.msg_entry.bind("<KeyRelease>", self.keyup)
 		self.send_btn = Button(self, text="Send", command=self.sendMessage)
 
 		self.chat.grid(row=3, column=0, padx=5, pady=5)
@@ -99,11 +100,34 @@ class ChatLog(LabelFrame):
 
 			self.msg_entry.delete(0, END)
 
+	def sendCommand(self, event=None):
+		cmd = self.msg_entry.get()
+		if client.connected:
+			client.sendCommand(cmd)
+		else:
+			self.insertMessage(f"You're offline dude.")
+		self.msg_entry.delete(0, END)
+
 	def insertMessage(self, message, state=None):
 		self.chat["state"] = "normal"
 		self.chat.insert(END, message + "\n", state)
 		self.chat.see(END)
 		self.chat["state"] = "disabled"
+
+	def keyup(self, e):
+		content = self.msg_entry.get()
+		if content:
+			if content[0] == "/":
+				self.send_btn.config(text="Command", command=self.sendCommand)
+				self.msg_entry.bind("<Return>", self.sendCommand)
+			else:
+				self.restartSend()
+		else:
+			self.restartSend()
+
+	def restartSend(self):
+		self.send_btn.config(text="Send", command=self.sendMessage)
+		self.msg_entry.bind("<Return>", self.sendMessage)
 
 
 class MainApplication(Frame):

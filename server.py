@@ -2,17 +2,20 @@ import socket
 import time
 import threading
 import pickle
+import json
 import queue
+import os
 from transfer import Transfer
 
 class Client:
-	def __init__(self, conn, addr, username, trans):
+	def __init__(self, conn, addr, username, trans, op):
 		self.conn = conn
 		self.addr = addr
 		self.username = username
 		self.trans = trans
 		self.pingLock = queue.Queue(1)
 		self.closed = False
+		self.op = op
 		threading.Thread(target=self.mainThread, daemon=True).start()
 		threading.Thread(target=self.pinger, daemon=True).start()
 
@@ -39,12 +42,38 @@ class Client:
 			if content["type"] == "msg":
 				self.handleMessages(content["data"])
 				print(f"[{self.username}]: {content['data']}")
+			elif content["type"] == "cmd":
+				self.handleCommands(content["data"])
 
 		self.closeClient(reason)
 
 	def handleMessages(self, content):
 		data = pickle.dumps({"sender": self.username, "data": content, "type": "msg"})
 		server.sendToAll(self.username, data)
+
+	def handleCommands(self, cmd):
+		if self.op:
+			try:
+				command = cmd[1:]
+				parts = command.split(" ")
+			except:
+				data = pickle.dumps({"type": "cmd-fail"})
+				self.trans.send(data)
+				return
+			if parts[0] == "kick":
+				try:
+					username = parts[1]
+					server.kickUser(username)
+				except:
+					data = pickle.dumps({"type": "cmd-fail"})
+					self.trans.send(data)
+			else:
+				data = pickle.dumps({"type": "cmd-fail"})
+				self.trans.send(data)
+				return
+		else:
+			data = pickle.dumps({"type": "no-permission"})
+			self.trans.send(data)
 
 	def pinger(self):
 		warn = False
@@ -79,18 +108,35 @@ class Server:
 		self.addr = (ip, port)
 		self.running = True
 		self.clients = {}
+		self.ops = []
 
 	def run(self):
 		self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.s.bind(self.addr)
 		self.s.listen()
+		self.checkForJsonFiles("ops")
 		print(f"Server started on {self.addr}")
 		self.acceptConnectionsLoop()
+
+	def checkForJsonFiles(self, *filenames):
+		for file in filenames:
+			file += ".json"
+			if not os.path.exists(file):
+				with open(file, "a") as f:
+					f.write("[]")
+			else:
+				with open(file, "r") as f:
+					try:
+						self.ops = json.load(f)
+					except json.decoder.JSONDecodeError:
+						with open(file, "w") as f_w:
+							f_w.write("[]")
 
 	def acceptConnectionsLoop(self):
 		while True:
 			conn, addr = self.s.accept()
-			threading.Thread(target=self.createConnection, args=(conn, addr), daemon=True).start()
+			threading.Thread(target=self.createConnection, args=(conn, addr), 
+				daemon=True).start()
 
 	def checkUsername(self, username):
 		if username in self.clients:
@@ -117,10 +163,18 @@ class Server:
 			trans.send(b"username_already")
 			return
 		trans.send(b"accepted")
-		self.clients[username] = Client(conn, addr, username, trans)
+		op = False
+		if username in self.ops:
+			op = True
+		self.clients[username] = Client(conn, addr, username, trans, op)
 		announce = pickle.dumps({"type": "new", "username": username})
 		self.sendToAll(None, announce)
 		print(f"{username} connected!")
+
+	def kickUser(self, username):
+		if username in self.clients:
+			self.clients[username].trans.send(b"kick")
+			self.clients[username].closeClient("Kicked.")
 
 if __name__ == '__main__':
 	server = Server("192.168.0.33", 25565)

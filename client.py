@@ -40,6 +40,10 @@ class Client:
 		data = pickle.dumps({"type": "msg", "data": msg})
 		self.trans.send(data)
 
+	def sendCommand(self, cmd):
+		data = pickle.dumps({"type": "cmd", "data": cmd})
+		self.trans.send(data)
+
 	def closeConnection(self, reason=""):
 		if self.connected:
 			self.connected = False
@@ -79,6 +83,10 @@ class Client:
 			elif data == b"pong":
 				self.pingLock.put(True)
 				continue
+			elif data == b"kick":
+				self.app.chatlog.insertMessage(f"You have been kicked from the server.", 
+					"warning")
+				break
 
 			self.pingLock.put(True)
 
@@ -95,3 +103,10 @@ class Client:
 			elif content["type"] == "gone":
 				username = content["username"]
 				self.app.chatlog.insertMessage(f"{username} disconnected.", "warning")
+			elif content["type"] == "no-permission":
+				self.app.chatlog.insertMessage(f"You have no permission to send commands.",
+												"warning")
+			elif content["type"] == "cmd-fail":
+				self.app.chatlog.insertMessage(f"Invalid command.", "warning")
+
+		self.closeConnection()
