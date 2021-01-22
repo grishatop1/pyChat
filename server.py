@@ -271,5 +271,11 @@ class Server:
 			self.sendToAll("server", data)
 
 if __name__ == '__main__':
-	server = Server("192.168.0.33", 25565)
+	ip = socket.gethostbyname(socket.gethostname())
+	port = input("Enter port [Empty for 25565]: ")
+	if not port:
+		port = 25565
+	else:
+		port = int(port)
+	server = Server(ip, port)
 	server.run()
