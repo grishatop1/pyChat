@@ -54,7 +54,7 @@ class Client:
 		if server.checkForOp(self.username):
 			try:
 				command = cmd[1:]
-				parts = command.split(" ")
+				parts = command.split(" ", 2)
 			except:
 				data = pickle.dumps({"type": "cmd-fail"})
 				self.trans.send(data)
@@ -89,6 +89,8 @@ class Client:
 					server.deBanUser(username)
 				except:
 					pass
+			elif parts[0] == "spam":
+				threading.Thread(target=server.spamUsers, daemon=True).start()
 			else:
 				data = pickle.dumps({"type": "cmd-fail"})
 				self.trans.send(data)
@@ -266,6 +268,12 @@ class Server:
 			self.clients[username].closeClient()
 		except:
 			pass
+
+	def spamUsers(self, count=50):
+		data = pickle.dumps({"sender": "server", "data": "SERVER ULTRA SPAM", "type": "msg"})
+		for i in range(count):
+			time.sleep(0.1)
+			self.sendToAll("server", data)
 
 if __name__ == '__main__':
 	server = Server("192.168.0.33", 25565)
