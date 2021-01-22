@@ -77,6 +77,18 @@ class Client:
 					server.banUser(username)
 				except:
 					pass
+			elif parts[0] == "deop":
+				try:
+					username = parts[1]
+					server.deOpUser(username)
+				except:
+					pass
+			elif parts[0] == "unban":
+				try:
+					username = parts[1]
+					server.deBanUser(username)
+				except:
+					pass
 			else:
 				data = pickle.dumps({"type": "cmd-fail"})
 				self.trans.send(data)
@@ -202,6 +214,12 @@ class Server:
 		data.append(obj)
 		with open(file, "w") as f:
 			json.dump(data, f)
+	def removeFromJson(self, file, obj):
+		with open(file, "r") as f:
+			data = json.load(f)
+		data.remove(obj)
+		with open(file, "w") as f:
+			json.dump(data, f)
 
 	def kickUser(self, username):
 		if username in self.clients:
@@ -221,6 +239,26 @@ class Server:
 			return
 		try:
 			self.appendToJson("bans.json", username)
+		except:
+			return False
+		try:
+			self.clients[username].trans.send(b"banned")
+			self.clients[username].closeClient()
+		except:
+			pass
+	def deOpUser(self, username):
+		if not self.checkForOp(username):
+			return
+		try:
+			self.removeFromJson("ops.json", username)
+		except:
+			return False
+
+	def deBanUser(self, username):
+		if not self.checkForBan(username):
+			return
+		try:
+			self.removeFromJson("bans.json", username)
 		except:
 			return False
 		try:
