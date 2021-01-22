@@ -245,7 +245,7 @@ class Server:
 			return False
 		try:
 			self.clients[username].trans.send(b"banned")
-			self.clients[username].closeClient()
+			self.clients[username].closeClient("Banned")
 		except:
 			pass
 	def deOpUser(self, username):
@@ -263,11 +263,6 @@ class Server:
 			self.removeFromJson("bans.json", username)
 		except:
 			return False
-		try:
-			self.clients[username].trans.send(b"banned")
-			self.clients[username].closeClient()
-		except:
-			pass
 
 	def spamUsers(self, count=50):
 		data = pickle.dumps({"sender": "server", "data": "SERVER ULTRA SPAM", "type": "msg"})

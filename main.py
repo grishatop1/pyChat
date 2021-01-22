@@ -141,7 +141,6 @@ class MainApplication(Frame):
 		self.chatlog.pack(padx=5, pady=5)
 
 	def playMessageSound(self):
-		root.deiconify()
 		playsound("msg.mp3")
 
 
