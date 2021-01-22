@@ -18,7 +18,6 @@ class Connection(LabelFrame):
 		self.port_entry.insert(0, "25565")
 		self.username_label = Label(self, text="Username:")
 		self.username_entry = Entry(self)
-		self.username_entry.insert(0, "loh")
 		self.connect_btn = Button(self, text="Connect", command=self.connect)
 
 		self.ip_label.grid(row=0, column=0, padx=5, pady=5)

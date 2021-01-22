@@ -33,6 +33,8 @@ class Client:
 			self.app.connection.connectionSuccess()
 		elif response == b"username_already":
 			self.app.connection.connectionFailed("Username is already taken.")
+		elif response == b"ban":
+			self.app.connection.connectionFailed("You were banned from this server.")
 		else:
 			self.app.connection.connectionFailed("An error was occured. :/")
 
@@ -85,6 +87,10 @@ class Client:
 				continue
 			elif data == b"kick":
 				self.app.chatlog.insertMessage(f"You have been kicked from the server.", 
+					"warning")
+				break
+			elif data == b"banned":
+				self.app.chatlog.insertMessage(f"Operator has banned you.", 
 					"warning")
 				break
 

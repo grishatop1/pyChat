@@ -8,14 +8,13 @@ import os
 from transfer import Transfer
 
 class Client:
-	def __init__(self, conn, addr, username, trans, op):
+	def __init__(self, conn, addr, username, trans):
 		self.conn = conn
 		self.addr = addr
 		self.username = username
 		self.trans = trans
 		self.pingLock = queue.Queue(1)
 		self.closed = False
-		self.op = op
 		threading.Thread(target=self.mainThread, daemon=True).start()
 		threading.Thread(target=self.pinger, daemon=True).start()
 
@@ -52,7 +51,7 @@ class Client:
 		server.sendToAll(self.username, data)
 
 	def handleCommands(self, cmd):
-		if self.op:
+		if server.checkForOp(self.username):
 			try:
 				command = cmd[1:]
 				parts = command.split(" ")
@@ -65,8 +64,19 @@ class Client:
 					username = parts[1]
 					server.kickUser(username)
 				except:
-					data = pickle.dumps({"type": "cmd-fail"})
-					self.trans.send(data)
+					pass
+			elif parts[0] == "op":
+				try:
+					username = parts[1]
+					server.opUser(username)
+				except:
+					pass
+			elif parts[0] == "ban":
+				try:
+					username = parts[1]
+					server.banUser(username)
+				except:
+					pass
 			else:
 				data = pickle.dumps({"type": "cmd-fail"})
 				self.trans.send(data)
@@ -108,29 +118,14 @@ class Server:
 		self.addr = (ip, port)
 		self.running = True
 		self.clients = {}
-		self.ops = []
 
 	def run(self):
 		self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.s.bind(self.addr)
 		self.s.listen()
-		self.checkForJsonFiles("ops")
+		self.checkForJsonFiles("ops", "bans")
 		print(f"Server started on {self.addr}")
 		self.acceptConnectionsLoop()
-
-	def checkForJsonFiles(self, *filenames):
-		for file in filenames:
-			file += ".json"
-			if not os.path.exists(file):
-				with open(file, "a") as f:
-					f.write("[]")
-			else:
-				with open(file, "r") as f:
-					try:
-						self.ops = json.load(f)
-					except json.decoder.JSONDecodeError:
-						with open(file, "w") as f_w:
-							f_w.write("[]")
 
 	def acceptConnectionsLoop(self):
 		while True:
@@ -159,22 +154,80 @@ class Server:
 			username = username.decode()
 		else:
 			return
+		if self.checkForBan(username):
+			trans.send(b"ban")
+			return
 		if self.checkUsername(username):
 			trans.send(b"username_already")
 			return
 		trans.send(b"accepted")
-		op = False
-		if username in self.ops:
-			op = True
-		self.clients[username] = Client(conn, addr, username, trans, op)
+		self.clients[username] = Client(conn, addr, username, trans)
 		announce = pickle.dumps({"type": "new", "username": username})
 		self.sendToAll(None, announce)
 		print(f"{username} connected!")
+
+	def checkForJsonFiles(self, *filenames):
+		for file in filenames:
+			file += ".json"
+			if not os.path.exists(file):
+				with open(file, "a") as f:
+					f.write("[]")
+			else:
+				with open(file, "r") as f:
+					try:
+						self.ops = json.load(f)
+					except json.decoder.JSONDecodeError:
+						with open(file, "w") as f_w:
+							f_w.write("[]")
+
+	def checkForOp(self, username):
+		with open("ops.json", "r") as f:
+			data = json.load(f)
+			if username in data:
+				return True
+			else:
+				return
+
+	def checkForBan(self, username):
+		with open("bans.json", "r") as f:
+			data = json.load(f)
+			if username in data:
+				return True
+			else:
+				return
+
+	def appendToJson(self, file, obj):
+		with open(file, "r") as f:
+			data = json.load(f)
+		data.append(obj)
+		with open(file, "w") as f:
+			json.dump(data, f)
 
 	def kickUser(self, username):
 		if username in self.clients:
 			self.clients[username].trans.send(b"kick")
 			self.clients[username].closeClient("Kicked.")
+
+	def opUser(self, username):
+		if self.checkForOp(username):
+			return
+		try:
+			self.appendToJson("ops.json", username)
+		except:
+			return False
+
+	def banUser(self, username):
+		if self.checkForBan(username):
+			return
+		try:
+			self.appendToJson("bans.json", username)
+		except:
+			return False
+		try:
+			self.clients[username].trans.send(b"banned")
+			self.clients[username].closeClient()
+		except:
+			pass
 
 if __name__ == '__main__':
 	server = Server("192.168.0.33", 25565)
