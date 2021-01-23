@@ -75,7 +75,7 @@ class ChatLog(LabelFrame):
 		LabelFrame.__init__(self, parent, *args, **kwargs)
 		self.parent = parent
 
-		self.chat = Text(self, width=30, wrap=CHAR, state="disabled")
+		self.chat = Text(self, width=30, wrap=WORD, state="disabled")
 		self.chat.tag_config('info', foreground="green")
 		self.chat.tag_config('warning', foreground="red")
 		self.chat.tag_config('state', foreground="orange")
