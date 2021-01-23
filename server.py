@@ -46,6 +46,10 @@ class Client:
 
 		self.closeClient(reason)
 
+	def sendDataPickle(self, obj):
+		data = pickle.dumps(obj)
+		self.trans.send(data)
+
 	def handleMessages(self, content):
 		data = pickle.dumps({"sender": self.username, "data": content, "type": "msg"})
 		server.sendToAll(self.username, data)
@@ -56,8 +60,7 @@ class Client:
 				command = cmd[1:]
 				parts = command.split(" ", 2)
 			except:
-				data = pickle.dumps({"type": "cmd-fail"})
-				self.trans.send(data)
+				self.sendDataPickle({"type": "cmd-fail"})
 				return
 			if parts[0] == "kick":
 				try:
@@ -93,15 +96,12 @@ class Client:
 				threading.Thread(target=server.spamUsers, daemon=True).start()
 			elif parts[0] == "list":
 				users = server.returnOnlineUsers()
-				data = pickle.dumps({"type":"info", "data":"Online:\n"+users})
-				self.trans.send(data)
+				self.sendDataPickle({"type":"info", "data":"Online:\n"+users})
 			else:
-				data = pickle.dumps({"type": "cmd-fail"})
-				self.trans.send(data)
+				self.sendDataPickle({"type": "cmd-fail"})
 				return
 		else:
-			data = pickle.dumps({"type": "no-permission"})
-			self.trans.send(data)
+			self.sendDataPickle({"type": "no-permission"})
 
 	def pinger(self):
 		warn = False
