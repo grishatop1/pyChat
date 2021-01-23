@@ -79,6 +79,7 @@ class ChatLog(LabelFrame):
 		self.chat.tag_config('info', foreground="green")
 		self.chat.tag_config('warning', foreground="red")
 		self.chat.tag_config('state', foreground="orange")
+		self.chat.tag_config('blue', foreground="blue")
 
 		self.msg_entry = Entry(self)
 		self.msg_entry.bind("<Return>", self.sendMessage)

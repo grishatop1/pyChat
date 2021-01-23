@@ -114,5 +114,7 @@ class Client:
 												"warning")
 			elif content["type"] == "cmd-fail":
 				self.app.chatlog.insertMessage(f"Invalid command.", "warning")
+			elif content["type"] == "info":
+				self.app.chatlog.insertMessage(content["data"], "blue")
 
 		self.closeConnection()

@@ -91,6 +91,10 @@ class Client:
 					pass
 			elif parts[0] == "spam":
 				threading.Thread(target=server.spamUsers, daemon=True).start()
+			elif parts[0] == "list":
+				users = server.returnOnlineUsers()
+				data = pickle.dumps({"type":"info", "data":"Online:\n"+users})
+				self.trans.send(data)
 			else:
 				data = pickle.dumps({"type": "cmd-fail"})
 				self.trans.send(data)
@@ -269,6 +273,11 @@ class Server:
 		for i in range(count):
 			time.sleep(0.1)
 			self.sendToAll("server", data)
+
+	def returnOnlineUsers(self):
+		clients = list(self.clients.keys())
+		output = "\n".join(clients)
+		return output
 
 if __name__ == '__main__':
 	ip = socket.gethostbyname(socket.gethostname())
