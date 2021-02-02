@@ -15,19 +15,23 @@ class Transfer:
 		header = str(data_len).encode() + (self.header - len(str(data_len))) * b" "
 		return header + data
 
-	def send(self, data):
+	def send(self, data, blocking=True):
 		h_data = self.appendHeader(data)
-		lock = queue.Queue()
-		self.pending.put([lock, h_data])
-		result = lock.get()
-		return result
+		if blocking:
+			lock = queue.Queue()
+			self.pending.put([lock, h_data])
+			result = lock.get()
+			return result
+		else:
+			self.pending.put([None, h_data])
 
 	def sendDataLoop(self):
 		while True:
 			lock, data = self.pending.get()
 			try:
 				self.s.send(data)
-				lock.put(True)
+				if lock:
+					lock.put(True)
 			except socket.error:
 				return
 

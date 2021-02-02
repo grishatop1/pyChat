@@ -6,6 +6,9 @@ import json
 import queue
 import os
 from transfer import Transfer
+from filetransfer import FileReceive
+
+PATH = "uploads/"
 
 class Client:
 	def __init__(self, conn, addr, username, trans):
@@ -15,6 +18,7 @@ class Client:
 		self.trans = trans
 		self.pingLock = queue.Queue(1)
 		self.closed = False
+		self.file = None
 		threading.Thread(target=self.mainThread, daemon=True).start()
 		threading.Thread(target=self.pinger, daemon=True).start()
 
@@ -43,6 +47,11 @@ class Client:
 				print(f"[{self.username}]: {content['data']}")
 			elif content["type"] == "cmd":
 				self.handleCommands(content["data"])
+			elif content["type"] == "new-file":
+				self.file = FileReceive(self, content["id"], content["filename"],
+									content["size"])
+			elif content["type"] == "file":
+				self.file.receive(content["data"])
 
 		self.closeClient(reason)
 
@@ -142,6 +151,7 @@ class Server:
 		self.s.bind(self.addr)
 		self.s.listen()
 		self.checkForJsonFiles("ops", "bans")
+		self.checkForDirs(PATH)
 		print(f"Server started on {self.addr}")
 		self.acceptConnectionsLoop()
 
@@ -214,6 +224,13 @@ class Server:
 			else:
 				return
 
+	def checkForDirs(self, *dirs):
+		for _dir in dirs:
+			try:
+				os.makedirs(_dir)
+			except:
+				pass
+
 	def appendToJson(self, file, obj):
 		with open(file, "r") as f:
 			data = json.load(f)
@@ -270,7 +287,7 @@ class Server:
 
 	def spamUsers(self, count=50):
 		data = pickle.dumps({"sender": "server", "data": "SERVER ULTRA SPAM", "type": "msg"})
-		for i in range(count):
+		for _ in range(count):
 			time.sleep(0.1)
 			self.sendToAll("server", data)
 

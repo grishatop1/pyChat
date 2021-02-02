@@ -1,9 +1,15 @@
-from tkinter import *
-from tkinter.ttk import *
-from tkinter.messagebox import showinfo
-from client import Client
-from playsound import playsound
+import os
 import threading
+import time
+from tkinter import *
+from tkinter.filedialog import askopenfilename
+from tkinter.messagebox import showinfo
+from tkinter.ttk import *
+
+from playsound import playsound
+
+from client import Client
+
 
 class Connection(LabelFrame):
 	def __init__(self, parent, *args, **kwargs):
@@ -129,6 +135,53 @@ class ChatLog(LabelFrame):
 		self.send_btn.config(text="Send", command=self.sendMessage)
 		self.msg_entry.bind("<Return>", self.sendMessage)
 
+class Files(LabelFrame):
+	def __init__(self, parent, *args, **kwargs):
+		LabelFrame.__init__(self, parent, *args, **kwargs)
+		self.parent = parent
+		self.uploading = False
+
+		self.upload_btn = Button(self, text="Upload a file", command=self.upload)
+		self.status = Label(self, text="Status: Idle")
+
+		self.upload_btn.pack(padx=5, pady=5)
+		self.status.pack(padx=5, pady=5)
+
+	def setUploaded(self, filename, success):
+		self.status["text"] = "Status: Idle"
+		self.upload_btn.config(text="Upload a file", state="normal")
+		self.uploading = False
+		if success:
+			showinfo("File", "File has been successfully uploaded.")
+		else:
+			showinfo("File", "Failed to upload the file. :(")
+
+	def setUploading(self, filename):
+		self.status["text"] = f"Uploading {filename} - 0%"
+		self.upload_btn.config(text="Uploading...", state="disabled")
+		self.uploading = True
+	
+	def updateStatus(self, filename, precent):
+		self.status["text"] = f"Uploading {filename} - {precent}%"
+
+	def upload(self):
+		file = askopenfilename()
+		filename = os.path.basename(file)
+		if os.path.exists(file):
+			self.status["text"] = f"Uploading - {filename}"
+			client.sendFile(file)
+			threading.Thread(target=self.progressThread, args=(filename,), 
+			daemon=True).start()
+
+	def progressThread(self, filename):
+		self.setUploading(filename)
+		while client.file.sending:
+			progress = client.file.progress()
+			self.updateStatus(filename, progress)
+			time.sleep(0.5)
+		self.setUploaded(filename, True)
+		
+
 
 class MainApplication(Frame):
 	def __init__(self, parent, *args, **kwargs):
@@ -137,9 +190,11 @@ class MainApplication(Frame):
 
 		self.connection = Connection(self, text="Connection")
 		self.chatlog = ChatLog(self, text="Chat")
+		self.files = Files(self, text="File Transfer")
 
 		self.connection.pack(padx=5, pady=5)
 		self.chatlog.pack(padx=5, pady=5)
+		self.files.pack(padx=5, pady=5, fill="x")
 
 	def playMessageSound(self):
 		playsound("msg.mp3")

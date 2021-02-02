@@ -4,11 +4,13 @@ import pickle
 import queue
 import time
 from transfer import Transfer
+from filetransfer import FileSend
 
 class Client:
 	def __init__(self, app):
 		self.app = app
 		self.connected = False
+		self.file = None
 
 	def createConnection(self, ip, port, username):
 		self.username = username
@@ -38,9 +40,16 @@ class Client:
 		else:
 			self.app.connection.connectionFailed("An error was occured. :/")
 
+	def sendDataPickle(self, obj, blocking=True):
+		data = pickle.dumps(obj)
+		self.trans.send(data, blocking)
+
+	def sendFile(self, filepath):
+		self.file = FileSend(self.trans, filepath)
+
 	def sendMessage(self, msg):
 		data = pickle.dumps({"type": "msg", "data": msg})
-		self.trans.send(data)
+		threading.Thread(target=self.trans.send, args=(data,)).start()
 
 	def sendCommand(self, cmd):
 		data = pickle.dumps({"type": "cmd", "data": cmd})
@@ -90,7 +99,7 @@ class Client:
 					"warning")
 				break
 			elif data == b"banned":
-				self.app.chatlog.insertMessage(f"Operator has banned you.", 
+				self.app.chatlog.insertMessage(f"You have been banned from the server.", 
 					"warning")
 				break
 
@@ -117,4 +126,4 @@ class Client:
 			elif content["type"] == "info":
 				self.app.chatlog.insertMessage(content["data"], "blue")
 
-		self.closeConnection()
+		self.closeConnection(reason)
