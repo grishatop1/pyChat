@@ -41,6 +41,7 @@ class Client:
 
 			self.pingLock.put(True)
 
+			
 			content = pickle.loads(data)
 			if content["type"] == "msg":
 				self.handleMessages(content["data"])

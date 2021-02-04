@@ -39,6 +39,7 @@ class Transfer:
 		full = b""
 		recv_len = 0
 		recv_size = self.header
+		header = b""
 		new = True
 		while True:
 			if recv_size == 0:
@@ -51,10 +52,12 @@ class Transfer:
 				return
 
 			if new:
-				actual_len = int(data[:self.header])
-				full += data[self.header:]
-				recv_len += len(data[self.header:])
-				recv_size = min(actual_len - recv_len, self.buffer)
+				header += data
+				if len(header) < self.header:
+					recv_size = self.header - len(header)
+					continue					
+				actual_len = int(header)
+				recv_size = min(actual_len, self.buffer)
 				new = False
 				continue
 
