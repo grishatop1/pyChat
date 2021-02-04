@@ -40,10 +40,6 @@ class Client:
 		else:
 			self.app.connection.connectionFailed("An error was occured. :/")
 
-	def sendDataPickle(self, obj, blocking=True):
-		data = pickle.dumps(obj)
-		self.trans.send(data, blocking)
-
 	def sendFile(self, filepath):
 		self.file = FileSend(self.trans, filepath)
 
@@ -83,10 +79,10 @@ class Client:
 		while True:
 			data = self.trans.recvData()
 			if not data:
-				reason = "Disconnection"
+				reason = "Connection lost."
 				break
 			if data == b"drop":
-				reason = "Client disconnected"
+				reason = "Server closed connection."
 				break
 			elif data == b"ping":
 				self.trans.send(b"pong")
@@ -95,13 +91,13 @@ class Client:
 				self.pingLock.put(True)
 				continue
 			elif data == b"kick":
-				self.app.chatlog.insertMessage(f"You have been kicked from the server.", 
-					"warning")
+				reason = "You have been kicked from the server."
 				break
 			elif data == b"banned":
-				self.app.chatlog.insertMessage(f"You have been banned from the server.", 
-					"warning")
+				reason = "You have been banned from the server."
 				break
+			elif data == b"timedout":
+				reason = "Timed out."
 
 			self.pingLock.put(True)
 
@@ -125,5 +121,13 @@ class Client:
 				self.app.chatlog.insertMessage(f"Invalid command.", "warning")
 			elif content["type"] == "info":
 				self.app.chatlog.insertMessage(content["data"], "blue")
+			elif content["type"] == "file-progress":
+				self.file.p = content["p"]
+			elif content["type"] == "file-result":
+				self.file.stop()
+				if content["result"]:
+					self.app.chatlog.insertMessage(f"File has been uploaded.", "info")
+				else:
+					self.app.chatlog.insertMessage(f"Uploading error.", "warning")
 
 		self.closeConnection(reason)

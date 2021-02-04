@@ -45,6 +45,7 @@ class Connection(LabelFrame):
 		self.port_entry["state"] = "enabled"
 		self.username_entry["state"] = "enabled"
 		self.connect_btn.config(state="enabled", text="Connect", command=self.connect)
+		self.app.files.clearStatus()
 
 	def setConnectingState(self):
 		self.ip_entry["state"] = "disabled"
@@ -147,14 +148,17 @@ class Files(LabelFrame):
 		self.upload_btn.pack(padx=5, pady=5)
 		self.status.pack(padx=5, pady=5)
 
-	def setUploaded(self, filename, success):
-		self.status["text"] = "Status: Idle"
-		self.upload_btn.config(text="Upload a file", state="normal")
-		self.uploading = False
+	def setUploaded(self, success):
+		self.clearStatus()
 		if success:
 			showinfo("File", "File has been successfully uploaded.")
 		else:
 			showinfo("File", "Failed to upload the file. :(")
+
+	def clearStatus(self):
+		self.status["text"] = "Status: Idle"
+		self.upload_btn.config(text="Upload a file", state="normal")
+		self.uploading = False
 
 	def setUploading(self, filename):
 		self.status["text"] = f"Uploading {filename} - 0%"
@@ -176,10 +180,9 @@ class Files(LabelFrame):
 	def progressThread(self, filename):
 		self.setUploading(filename)
 		while client.file.sending:
-			progress = client.file.progress()
-			self.updateStatus(filename, progress)
+			self.updateStatus(filename, client.file.p)
 			time.sleep(0.5)
-		self.setUploaded(filename, True)
+		self.setUploaded(True)
 		
 
 

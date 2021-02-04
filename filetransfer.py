@@ -21,6 +21,7 @@ class FileReceive:
 		self.timeout_seconds = 10
 		self.time = 0
 		threading.Thread(target=self.timeout, daemon=True).start()
+		threading.Thread(target=self.progress, daemon=True).start()
 
 	def receive(self, data):
 		self.time = 0
@@ -36,8 +37,12 @@ class FileReceive:
 		self.f.close()
 		if success:
 			os.rename(self.filepath+TEMP_EXT, self.filepath)
+			self.parent.trans.sendDataPickle({"type": "file-result",
+											"result": True})
 		else:
 			os.remove(self.filepath+TEMP_EXT)
+			self.parent.trans.sendDataPickle({"type": "file-result",
+											"result": False})
 
 	def timeout(self):
 		while self.active:
@@ -47,6 +52,15 @@ class FileReceive:
 			else:
 				self.time += 1
 			time.sleep(1)
+
+	def progress(self):
+		while self.active:
+			p = int(self.recv_size/self.size*100)
+			self.parent.trans.sendDataPickle({"type": "file-progress",
+											"p": p})
+			time.sleep(0.5)
+
+
 
 class FileSend:
 	def __init__(self, trans, filepath):
@@ -58,14 +72,12 @@ class FileSend:
 		self.sending = True
 		self.buffer = 1024 * 12
 		self.sent_bytes = 0
+		self.p = 0
 		self.file_id = self.generateID()
 		threading.Thread(target=self.sendThread, daemon=True).start()
 
 	def generateID(self):
 		return int(f"{random.randint(0,9)}"*4)
-
-	def progress(self):
-		return int(self.sent_bytes/self.size*100)
 
 	def sendThread(self):
 		pickled = pickle.dumps({"type": "new-file", 
@@ -81,7 +93,6 @@ class FileSend:
 				self.trans.send(pickled, blocking=False)
 				self.sent_bytes += len(data)
 			else:
-				self.stop()
 				break
 
 	def stop(self):

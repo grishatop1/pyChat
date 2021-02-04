@@ -1,13 +1,14 @@
 import socket
 import threading
 import queue
+import pickle
 
 class Transfer:
 	def __init__(self, sock):
 		self.s = sock
 		self.pending = queue.Queue()
 		self.header = 12
-		self.buffer = 1024
+		self.buffer = 1024 * 2
 		threading.Thread(target=self.sendDataLoop, daemon=True).start()
 
 	def appendHeader(self, data):
@@ -24,6 +25,10 @@ class Transfer:
 			return result
 		else:
 			self.pending.put([None, h_data])
+
+	def sendDataPickle(self, obj, blocking=True):
+		data = pickle.dumps(obj)
+		self.send(data, blocking)
 
 	def sendDataLoop(self):
 		while True:
