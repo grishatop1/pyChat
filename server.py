@@ -6,12 +6,13 @@ import json
 import queue
 import os
 from transfer import Transfer
-from filetransfer import FileReceive
+from filetransfer import FileReceiveServer
 
 PATH = "uploads/"
 
 class Client:
-	def __init__(self, conn, addr, username, trans):
+	def __init__(self, server, conn, addr, username, trans):
+		self.server = server
 		self.conn = conn
 		self.addr = addr
 		self.username = username
@@ -48,7 +49,7 @@ class Client:
 			elif content["type"] == "cmd":
 				self.handleCommands(content["data"])
 			elif content["type"] == "new-file":
-				self.file = FileReceive(self, content["id"], content["filename"],
+				self.file = FileReceiveServer(self, content["id"], content["filename"],
 									content["size"])
 			elif content["type"] == "file":
 				self.file.receive(content["data"])
@@ -189,7 +190,7 @@ class Server:
 			trans.send(b"username_already")
 			return
 		trans.send(b"accepted")
-		self.clients[username] = Client(conn, addr, username, trans)
+		self.clients[username] = Client(self, conn, addr, username, trans)
 		announce = pickle.dumps({"type": "new", "username": username})
 		self.sendToAll(None, announce)
 		print(f"{username} connected!")

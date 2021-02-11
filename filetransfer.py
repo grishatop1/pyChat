@@ -8,11 +8,12 @@ import pickle
 TEMP_EXT = ".temporary"
 PATH = "uploads/"
 
-class FileReceive:
+class FileReceiveServer:
 	def __init__(self, parent, _id, filename, size):
 		self.parent = parent
 		self.id = _id
-		self.filename = filename
+		self.filename, self.fileext = os.path.splitext(filename)
+		self.fulname = filename
 		self.filepath = PATH + filename
 		self.size = size
 		self.recv_size = 0
@@ -36,7 +37,13 @@ class FileReceive:
 		self.active = False
 		self.f.close()
 		if success:
-			os.rename(self.filepath+TEMP_EXT, self.filepath)
+			for i in range(1000):
+				try:
+					os.rename(self.filepath+TEMP_EXT, PATH+self.filename+str(i)+self.fileext)
+					break
+				except OSError:
+					continue
+
 			self.parent.trans.sendDataPickle({"type": "file-result",
 											"result": True})
 		else:
@@ -90,7 +97,7 @@ class FileSend:
 			data = self.f.read(self.buffer)
 			if data:
 				pickled = pickle.dumps({"type": "file", "id": self.file_id, "data": data})
-				self.trans.send(pickled, blocking=False)
+				self.trans.send(pickled)
 				self.sent_bytes += len(data)
 			else:
 				break

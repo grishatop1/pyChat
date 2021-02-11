@@ -2,6 +2,7 @@ import socket
 import threading
 import queue
 import pickle
+import time
 
 class Transfer:
 	def __init__(self, sock):
@@ -9,6 +10,8 @@ class Transfer:
 		self.pending = queue.Queue()
 		self.header = 12
 		self.buffer = 1024 * 2
+		self.timeout = 5
+		self.connected = True
 		threading.Thread(target=self.sendDataLoop, daemon=True).start()
 
 	def appendHeader(self, data):

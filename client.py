@@ -127,7 +127,9 @@ class Client:
 				self.file.stop()
 				if content["result"]:
 					self.app.chatlog.insertMessage(f"File has been uploaded.", "info")
+					self.app.files.setUploaded(True)
 				else:
 					self.app.chatlog.insertMessage(f"Uploading error.", "warning")
+					self.app.files.setUploaded(False)
 
 		self.closeConnection(reason)

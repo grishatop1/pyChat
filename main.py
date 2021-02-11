@@ -45,7 +45,7 @@ class Connection(LabelFrame):
 		self.port_entry["state"] = "enabled"
 		self.username_entry["state"] = "enabled"
 		self.connect_btn.config(state="enabled", text="Connect", command=self.connect)
-		self.app.files.clearStatus()
+		self.parent.files.clearStatus()
 
 	def setConnectingState(self):
 		self.ip_entry["state"] = "disabled"
@@ -179,10 +179,9 @@ class Files(LabelFrame):
 
 	def progressThread(self, filename):
 		self.setUploading(filename)
-		while client.file.sending:
+		while self.uploading:
 			self.updateStatus(filename, client.file.p)
 			time.sleep(0.5)
-		self.setUploaded(True)
 		
 
 
