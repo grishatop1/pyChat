@@ -212,4 +212,8 @@ if __name__ == "__main__":
 
 	client = Client(main)
 
+	style = Style(root)
+	root.tk.call('source', 'azure dark/azure dark.tcl')
+	style.theme_use('azure')
+
 	root.mainloop()
